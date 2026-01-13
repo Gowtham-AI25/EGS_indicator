@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPI | Exponential Pressure Index Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #fcfcfb;
+            --accent-primary: #0f172a;
+            --accent-sky: #38bdf8;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: #1e293b; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+            overflow: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(15, 23, 42, 0.05);
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #0f172a;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #38bdf8;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+                    <span class="text-sky-400 font-bold text-xs">EPI</span>
+                </div>
+                <span class="font-bold tracking-tight text-slate-900 text-lg uppercase">Exponential Pressure Index</span>
+            </div>
+            <div class="hidden md:flex gap-8 text-sm font-medium text-slate-500 uppercase tracking-widest">
+                <a href="#lab" class="hover:text-sky-500 transition">Simulator</a>
+                <a href="#theory" class="hover:text-sky-500 transition">The Theory</a>
+                <a href="#math" class="hover:text-sky-500 transition">Mathematics</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="pt-20 pb-16 border-b border-slate-50">
+        <div class="max-w-5xl mx-auto px-6 text-center">
+            <h1 class="text-5xl md:text-7xl font-800 text-slate-900 tracking-tighter mb-6">
+                Quantify <span class="text-sky-500">Institutional Conviction</span>
+            </h1>
+            <p class="text-xl text-slate-500 leading-relaxed max-w-3xl mx-auto mb-10">
+                A hybrid quantitative framework designed to isolate high-impact market signals by mapping price "Distance" and volume "Energy" through non-linear power functions.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <span class="px-4 py-2 bg-slate-900 text-white rounded-full text-xs font-bold uppercase tracking-widest">Phase 1: Foundation</span>
+                <span class="px-4 py-2 bg-sky-100 text-sky-700 rounded-full text-xs font-bold uppercase tracking-widest">Phase 2: Volume Energy</span>
+                <span class="px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold uppercase tracking-widest">Phase 3: Power Law Filtering</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Interaction Lab (Simulator) -->
+    <section id="lab" class="py-20 bg-stone-50/50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">Interactive Performance Lab</h2>
+                <p class="text-slate-600 max-w-2xl">
+                    Manipulate market variables below to see how the EPI handles different scenarios. This laboratory compares the **Vanilla** logic with the **Robust ATR-Weighted** logic to demonstrate efficiency filtering.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <!-- Controls -->
+                <div class="lg:col-span-4 space-y-8 glass-card p-8 rounded-3xl shadow-sm border border-slate-200">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Market Variables</h3>
+                    
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-semibold text-slate-700">Candle Close Position ($D$)</label>
+                            <span id="val-d" class="mono text-sky-500 font-bold">0.00</span>
+                        </div>
+                        <input type="range" id="input-d" min="-1" max="1" step="0.01" value="0.75">
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold">
+                            <span>Bearish</span>
+                            <span>Doji</span>
+                            <span>Bullish</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-semibold text-slate-700">Volume Intensity ($VI$)</label>
+                            <span id="val-vi" class="mono text-sky-500 font-bold">1.0x</span>
+                        </div>
+                        <input type="range" id="input-vi" min="0.1" max="5" step="0.1" value="1.5">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-semibold text-slate-700">Efficiency Ratio ($ATR \div Range$)</label>
+                            <span id="val-eff" class="mono text-sky-500 font-bold">1.0</span>
+                        </div>
+                        <input type="range" id="input-eff" min="0.1" max="2" step="0.1" value="1.0">
+                        <p class="text-[11px] text-slate-400 mt-2 italic">Low values penalize high volume with little price movement (Churn).</p>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-100">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-semibold text-slate-700 font-bold">Power Factor ($k$)</label>
+                            <span id="val-k" class="mono text-slate-900 font-bold">2.0</span>
+                        </div>
+                        <input type="range" id="input-k" min="1" max="4" step="0.1" value="2.0">
+                    </div>
+                </div>
+
+                <!-- Visualizers -->
+                <div class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Gauge Result -->
+                    <div class="glass-card p-6 rounded-3xl flex flex-col items-center justify-center">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">EPI Conviction Gauge</h4>
+                        <div class="chart-container" style="height: 200px;">
+                            <canvas id="gaugeChart"></canvas>
+                        </div>
+                        <div class="text-center mt-4">
+                            <p class="text-xs text-slate-400 uppercase font-bold">Current Conviction Score</p>
+                            <span id="scoreText" class="text-5xl font-black text-slate-900">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Synthetic Split -->
+                    <div class="glass-card p-6 rounded-3xl flex flex-col items-center justify-center">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Synthetic Pressure Split</h4>
+                        <div class="chart-container" style="height: 200px;">
+                            <canvas id="splitChart"></canvas>
+                        </div>
+                        <div class="flex justify-around w-full mt-4 text-center">
+                            <div><span id="buyPct" class="text-xl font-bold text-sky-500">50%</span><p class="text-[9px] text-slate-400 uppercase">Demand</p></div>
+                            <div><span id="sellPct" class="text-xl font-bold text-slate-400">50%</span><p class="text-[9px] text-slate-400 uppercase">Supply</p></div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Summary -->
+                    <div class="md:col-span-2 glass-card p-6 rounded-3xl border-l-4 border-l-sky-500">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-grow">
+                                <h4 class="font-bold text-slate-900 uppercase text-xs mb-2">Logic Comparison Analysis</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="p-4 bg-slate-50 rounded-xl">
+                                        <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Vanilla EPI</p>
+                                        <p id="vanillaRes" class="text-xl font-bold text-slate-700">--</p>
+                                    </div>
+                                    <div class="p-4 bg-sky-50 rounded-xl border border-sky-100">
+                                        <p class="text-[10px] text-sky-500 uppercase font-bold mb-1">Robust (ATR-Weighted)</p>
+                                        <p id="robustRes" class="text-xl font-bold text-sky-700">--</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Component Logic Section -->
+    <section id="theory" class="py-24 border-t border-slate-100">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="max-w-2xl mb-16">
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">Indicator Mechanism</h2>
+                <p class="text-slate-500">
+                    The EPI avoids the "Linear Trap" of standard RSI/CCI indicators by viewing the market as a physical system of energy expenditure.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div class="space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-bold">1</div>
+                    <h3 class="text-xl font-bold text-slate-900">The Positional Pillar ($D$)</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">
+                        Rather than comparing external closes, EPI analyzes the internal anatomy. By normalizing the close relative to the range, we identify which side won the battle of the candle.
+                    </p>
+                </div>
+                <div class="space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-sky-500 flex items-center justify-center text-white font-bold">2</div>
+                    <h3 class="text-xl font-bold text-slate-900">The Energy Pillar ($VI$)</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">
+                        Volume is the gasoline. Without energy, a big price move is often a retail trap. We normalize this against a moving average to filter out "noise" levels of churn.
+                    </p>
+                </div>
+                <div class="space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-200 flex items-center justify-center text-slate-800 font-bold">3</div>
+                    <h3 class="text-xl font-bold text-slate-900">The Non-Linear Filter ($k$)</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">
+                        Squaring a signal increases the Signal-to-Noise Ratio. We apply a power factor (usually $k=2$) to ensure common noise stays near zero while institutional sweeps explode in value.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mathematical Specification -->
+    <section id="math" class="py-24 bg-slate-900 text-white overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-1/3 h-full bg-sky-500 opacity-5 -skew-x-12 translate-x-1/2"></div>
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="mb-16">
+                <h2 class="text-3xl font-bold mb-4">Technical Blueprint</h2>
+                <p class="text-slate-400 max-w-2xl">Step-by-step mathematical implementation for PineScript, Python, or C# developers.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div class="space-y-10">
+                    <div>
+                        <span class="text-xs font-bold text-sky-400 uppercase tracking-widest block mb-4">Step 01: Internal Dominance</span>
+                        <div class="p-6 bg-slate-800 rounded-2xl border border-slate-700 shadow-xl">
+                            <p class="mono text-sm mb-4">Midpoint = (High + Low) / 2</p>
+                            <p class="mono text-sm text-sky-300">D = 2 * ( (Close - Midpoint) / (High - Low) )</p>
+                            <p class="text-[10px] text-slate-500 mt-4 italic">// Result: Normalized range between -1.0 and +1.0</p>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-sky-400 uppercase tracking-widest block mb-4">Step 02: Conviction Intensity</span>
+                        <div class="p-6 bg-slate-800 rounded-2xl border border-slate-700 shadow-xl">
+                            <p class="mono text-sm mb-4">AvgVol = SMA(Volume, 20)</p>
+                            <p class="mono text-sm text-sky-300">VI = Volume / AvgVol</p>
+                            <p class="text-[10px] text-slate-500 mt-4 italic">// Standard Volume is multiplied by efficiency for Robust Mode</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-10">
+                    <div>
+                        <span class="text-xs font-bold text-pink-400 uppercase tracking-widest block mb-4">Step 03: Exponential Transformation</span>
+                        <div class="p-6 bg-slate-800 rounded-2xl border border-pink-500/20 shadow-xl">
+                            <p class="mono text-sm mb-4">Strength = Abs(D * VI)^k</p>
+                            <p class="mono text-sm text-pink-400">EPI = sgn(D) * Strength * 100</p>
+                            <p class="text-[10px] text-slate-500 mt-4 italic">// The 'k' factor flattens the curve for non-institutional volume.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-8 bg-sky-500 rounded-3xl text-slate-900">
+                        <h4 class="font-bold text-lg mb-4">The "Robust" Extension</h4>
+                        <p class="text-sm mb-4 leading-relaxed font-medium">
+                            To detect "Efficient" vs "Inefficient" effort, replace standard $VI$ with $VI \times (\text{Range} \div \text{ATR})$. This penalizes high volume that fails to move the price (Churn).
+                        </p>
+                        <div class="bg-slate-900/10 p-4 rounded-xl font-bold mono text-xs">
+                            VI_robust = VI * (Range / ATR(14))
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Strategy Verification Section -->
+    <section class="py-24">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-slate-900 mb-12">Feasibility Verification</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="p-8 bg-white border border-slate-100 rounded-3xl shadow-sm">
+                    <h3 class="font-bold text-lg mb-4 text-slate-900">Scenario: The "No-Volume Pump"</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed mb-6">
+                        A common retail trap where price rises on low volume. While $D$ might be $1.0$, if $VI$ is $0.1$, the squared result is $0.01$. The EPI stays flat, preventing you from buying a weak breakout.
+                    </p>
+                    <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-slate-300" style="width: 5%"></div>
+                    </div>
+                </div>
+                <div class="p-8 bg-white border border-slate-100 rounded-3xl shadow-sm">
+                    <h3 class="font-bold text-lg mb-4 text-slate-900">Scenario: Panic Selling</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed mb-6">
+                        Institutional liquidation. $D$ hits $-1.0$ and $VI$ spikes to $4.0+$. The EPI score crashes to its cap of $-100$, confirming high-conviction distribution.
+                    </p>
+                    <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-rose-500" style="width: 95%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-white border-t border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">EPI Quantitative Model Specification v2.0</p>
+            <div class="mt-4 flex justify-center gap-6 text-[10px] text-slate-400 uppercase font-bold tracking-widest">
+                <span>© 2024 Market Mechanics Lab</span>
+                <span>Open-Source Algorithm Architecture</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            D: 0.75,
+            VI: 1.5,
+            EFF: 1.0,
+            K: 2.0,
+            charts: {}
+        };
+
+        // --- Core EPI Calculations ---
+        function calculateEPI() {
+            // Vanilla calculation
+            const sgn = Math.sign(state.D);
+            const vanillaStrength = Math.pow(Math.abs(state.D * state.VI), state.K) * 100;
+            const vanillaScore = sgn * Math.min(vanillaStrength, 100);
+
+            // Robust calculation
+            const robustVI = state.VI * state.EFF;
+            const robustStrength = Math.pow(Math.abs(state.D * robustVI), state.K) * 100;
+            const robustScore = sgn * Math.min(robustStrength, 100);
+
+            return {
+                vanilla: vanillaScore,
+                robust: robustScore
+            };
+        }
+
+        // --- Initialization ---
+        function initCharts() {
+            // Gauge Chart
+            const ctxGauge = document.getElementById('gaugeChart').getContext('2d');
+            state.charts.gauge = new Chart(ctxGauge, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [50, 50],
+                        backgroundColor: ['#e2e8f0', '#0f172a'],
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: 270,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '80%',
+                    plugins: { tooltip: { enabled: false } }
+                }
+            });
+
+            // Split Bar Chart
+            const ctxSplit = document.getElementById('splitChart').getContext('2d');
+            state.charts.split = new Chart(ctxSplit, {
+                type: 'bar',
+                data: {
+                    labels: ['Pressure'],
+                    datasets: [
+                        { label: 'Demand', data: [50], backgroundColor: '#38bdf8', barThickness: 40 },
+                        { label: 'Supply', data: [50], backgroundColor: '#e2e8f0', barThickness: 40 }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, display: false, max: 100 },
+                        y: { stacked: true, display: false }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // --- UI Updates ---
+        function updateUI() {
+            const results = calculateEPI();
+            
+            // Text values
+            document.getElementById('val-d').innerText = state.D.toFixed(2);
+            document.getElementById('val-vi').innerText = state.VI.toFixed(1) + 'x';
+            document.getElementById('val-eff').innerText = state.EFF.toFixed(1);
+            document.getElementById('val-k').innerText = state.K.toFixed(1);
+            
+            document.getElementById('scoreText').innerText = Math.round(results.robust);
+            document.getElementById('vanillaRes').innerText = Math.round(results.vanilla);
+            document.getElementById('robustRes').innerText = Math.round(results.robust);
+
+            // Synthetic Volume Split logic
+            // Base buy % on D (Close position)
+            const buyPct = Math.round(( (state.D + 1) / 2 ) * 100);
+            const sellPct = 100 - buyPct;
+            document.getElementById('buyPct').innerText = buyPct + '%';
+            document.getElementById('sellPct').innerText = sellPct + '%';
+
+            // Update Gauge
+            const absScore = Math.abs(results.robust);
+            state.charts.gauge.data.datasets[0].data = [100 - absScore, absScore];
+            state.charts.gauge.data.datasets[0].backgroundColor = [
+                '#e2e8f0', 
+                results.robust >= 0 ? '#38bdf8' : '#f43f5e'
+            ];
+            state.charts.gauge.update();
+
+            // Update Split Bar
+            state.charts.split.data.datasets[0].data = [buyPct];
+            state.charts.split.data.datasets[1].data = [sellPct];
+            state.charts.split.data.datasets[0].backgroundColor = results.robust >= 0 ? '#38bdf8' : '#cbd5e1';
+            state.charts.split.data.datasets[1].backgroundColor = results.robust < 0 ? '#f43f5e' : '#e2e8f0';
+            state.charts.split.update();
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('input-d').addEventListener('input', (e) => { state.D = parseFloat(e.target.value); updateUI(); });
+        document.getElementById('input-vi').addEventListener('input', (e) => { state.VI = parseFloat(e.target.value); updateUI(); });
+        document.getElementById('input-eff').addEventListener('input', (e) => { state.EFF = parseFloat(e.target.value); updateUI(); });
+        document.getElementById('input-k').addEventListener('input', (e) => { state.K = parseFloat(e.target.value); updateUI(); });
+
+        // --- Start ---
+        window.onload = () => {
+            initCharts();
+            updateUI();
+        };
+
+    </script>
+</body>
+</html>

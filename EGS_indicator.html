@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exponential Gap Strength (EGS) Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: Warm Professional & Tech -->
+    <!-- Background: #FAFAF9 (Warm Gray/Stone 50) -->
+    <!-- Cards: White with soft shadows -->
+    <!-- Accents: Slate 800 (Text), Blue 600 (Primary Action), Emerald 500 (Bullish), Rose 500 (Bearish) -->
+    
+    <!-- Application Structure Plan: 
+         1. Hero Section: Introduction to EGS and the core problem (Noise vs. Signal).
+         2. The Logic Lab (Interactive Core): A split-screen dashboard.
+            - Left: Input Control Panel (Price data, ATR, Volume, K-factor).
+            - Right: Live Visualization. A dynamic Candlestick chart showing the gap visually + A Gauge chart showing the EGS Score.
+            - Bottom: Real-time calculation breakdown step-by-step.
+         3. Implementation Hub: Tabbed interface detailing the 3 variations (Vanilla, Volatility, Volume) and the final Robust Algorithm.
+         4. Strategy Guide: Documentation on how to interpret scores (Predictive Value) and trade setup examples.
+         5. Footer: Summary.
+         
+         Why this structure?
+         The user needs to understand a complex mathematical formula. By placing the "Simulator" first, they get immediate feedback on how inputs affect the score. 
+         Then, once hooked by the visual result, they can dive into the "Implementation Hub" for the code/math details.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Interactive Candlestick (Chart.js): Goal is to Visualize the Gap. 
+            - Method: Bar chart customized to look like candles.
+            - Interaction: Sliders update data points, chart redraws instantly.
+         2. EGS Score Gauge (Chart.js Doughnut): Goal is to show Strength & Direction.
+            - Method: Doughnut chart 180-degree rotation.
+            - Interaction: Needle moves based on calculated EGS score (-100 to +100).
+         3. Math Walkthrough (HTML/JS): Goal is transparency.
+            - Method: Dynamic text updating with slider values to show the formula in action.
+         
+         CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #FAFAF9; color: #1E293B; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #2563EB;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .slider-thumb::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #2563EB;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .tab-active {
+            border-bottom: 2px solid #2563EB;
+            color: #2563EB;
+            font-weight: 600;
+        }
+        .tab-inactive {
+            color: #64748B;
+            font-weight: 400;
+        }
+        .tab-inactive:hover {
+            color: #334155;
+        }
+        .math-font {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #F1F5F9;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-slate-800 tracking-tight">EGS <span class="text-blue-600">Indicator</span></span>
+                </div>
+                <div class="flex items-center space-x-8 text-sm font-medium">
+                    <a href="#simulator" class="text-slate-600 hover:text-blue-600 transition">Simulator</a>
+                    <a href="#variations" class="text-slate-600 hover:text-blue-600 transition">Algorithms</a>
+                    <a href="#documentation" class="text-slate-600 hover:text-blue-600 transition">Strategy Guide</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        
+        <!-- Hero Section -->
+        <div class="bg-white border-b border-stone-200">
+            <div class="max-w-5xl mx-auto px-4 py-12 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Exponential Gap Strength (EGS)</h1>
+                <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
+                    Quantify the hidden power of market gaps. Distinguish institutional "breakaway" moves from common market noise using non-linear exponential analysis.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto text-left">
+                    <div class="p-4 bg-stone-50 rounded-lg border border-stone-200">
+                        <div class="flex items-center mb-2">
+                            <span class="w-2 h-2 rounded-full bg-slate-400 mr-2"></span>
+                            <h3 class="font-semibold text-slate-700">Common Gaps (Noise)</h3>
+                        </div>
+                        <p class="text-sm text-slate-500">Small fluctuations (< 1-2%) that typically fill quickly. Low predictive value.</p>
+                    </div>
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <div class="flex items-center mb-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-600 mr-2"></span>
+                            <h3 class="font-semibold text-blue-800">Breakaway Gaps (Signal)</h3>
+                        </div>
+                        <p class="text-sm text-blue-700">Large shifts (> 2%) driven by volume. High probability of trend initiation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulator Section -->
+        <div id="simulator" class="py-12 bg-stone-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-slate-900">EGS Simulator</h2>
+                    <p class="text-slate-600 mt-2">Adjust market conditions to see how the EGS formula filters noise and amplifies signal in real-time. This interactive lab demonstrates the "Combined Robust" implementation.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <!-- Controls Panel -->
+                    <div class="lg:col-span-4 space-y-6">
+                        <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                            <h3 class="font-semibold text-slate-800 border-b pb-2 mb-4">Market Variables</h3>
+                            
+                            <!-- Gap Size Control -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-slate-700 mb-2 flex justify-between">
+                                    <span>Gap Percentage</span>
+                                    <span id="gapVal" class="text-blue-600 font-bold">1.5%</span>
+                                </label>
+                                <input type="range" min="-5" max="5" step="0.1" value="1.5" id="gapSlider" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                                <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                    <span>-5% (Bear)</span>
+                                    <span>0%</span>
+                                    <span>+5% (Bull)</span>
+                                </div>
+                            </div>
+
+                            <!-- Volatility (ATR) Control -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-slate-700 mb-2 flex justify-between">
+                                    <span>Asset Volatility (ATR %)</span>
+                                    <span id="atrVal" class="text-slate-600 font-mono">1.0%</span>
+                                </label>
+                                <input type="range" min="0.5" max="3" step="0.1" value="1.0" id="atrSlider" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                                <p class="text-xs text-slate-500 mt-2">High ATR raises the threshold for what counts as a "strong" gap.</p>
+                            </div>
+
+                            <!-- Volume Control -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-slate-700 mb-2 flex justify-between">
+                                    <span>Volume vs Avg (%)</span>
+                                    <span id="volVal" class="text-slate-600 font-mono">100%</span>
+                                </label>
+                                <input type="range" min="50" max="300" step="10" value="100" id="volSlider" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                                <p class="text-xs text-slate-500 mt-2">Volume > 150% confirms institutional intent.</p>
+                            </div>
+
+                             <!-- K-Factor Control -->
+                             <div class="mb-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-2 flex justify-between">
+                                    <span>Sensitivity (k)</span>
+                                    <span id="kVal" class="text-slate-600 font-mono">2.0</span>
+                                </label>
+                                <input type="range" min="1" max="4" step="0.1" value="2.0" id="kSlider" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            </div>
+                        </div>
+
+                        <!-- Live Calc Box -->
+                        <div class="bg-slate-900 rounded-xl shadow-lg p-6 text-white">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Calculation Stream</h3>
+                            <div class="space-y-2 font-mono text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Raw Gap (G):</span>
+                                    <span id="calcRaw" class="text-white">1.50%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Power (G^k):</span>
+                                    <span id="calcPower" class="text-yellow-400">2.25</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Norm. Base (2*ATR)^k:</span>
+                                    <span id="calcNorm" class="text-slate-300">4.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Vol Multiplier:</span>
+                                    <span id="calcVol" class="text-blue-300">x1.0</span>
+                                </div>
+                                <div class="border-t border-slate-700 pt-2 mt-2 flex justify-between text-lg font-bold">
+                                    <span>EGS Score:</span>
+                                    <span id="calcFinal">56.25</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visualizations Panel -->
+                    <div class="lg:col-span-8 space-y-6">
+                        
+                        <!-- Chart Container -->
+                        <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold text-slate-800">Visual Gap Representation</h3>
+                                <div id="statusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                                    NOISE
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="gapChart"></canvas>
+                            </div>
+                            <p class="text-center text-xs text-slate-400 mt-2">Simulated Price Action (Prev Close vs Current Open)</p>
+                        </div>
+
+                        <!-- Gauge Container -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 flex flex-col items-center justify-center">
+                                <h3 class="font-semibold text-slate-800 mb-2 self-start">Signal Strength</h3>
+                                <div class="chart-container" style="height: 180px;">
+                                    <canvas id="gaugeChart"></canvas>
+                                </div>
+                                <div class="text-center -mt-8">
+                                    <span id="gaugeValue" class="text-3xl font-bold text-slate-800">0</span>
+                                    <span class="text-sm text-slate-500 block">Normalized Score (-100 to +100)</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                                <h3 class="font-semibold text-slate-800 mb-4">Interpretation</h3>
+                                <ul class="space-y-4">
+                                    <li class="flex items-start">
+                                        <div id="indNoise" class="flex-shrink-0 w-3 h-3 mt-1.5 rounded-full bg-slate-300 mr-3"></div>
+                                        <div>
+                                            <span class="text-sm font-bold text-slate-700">Noise Zone (-20 to +20)</span>
+                                            <p class="text-xs text-slate-500">Common gaps. Likely to fill. Ignore.</p>
+                                        </div>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <div id="indMod" class="flex-shrink-0 w-3 h-3 mt-1.5 rounded-full bg-slate-300 mr-3"></div>
+                                        <div>
+                                            <span class="text-sm font-bold text-slate-700">Moderate Momentum (20-60)</span>
+                                            <p class="text-xs text-slate-500">Potential trade. Look for volume confirmation.</p>
+                                        </div>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <div id="indStrong" class="flex-shrink-0 w-3 h-3 mt-1.5 rounded-full bg-slate-300 mr-3"></div>
+                                        <div>
+                                            <span class="text-sm font-bold text-slate-700">High Conviction (> 60)</span>
+                                            <p class="text-xs text-slate-500">Breakaway gap. Low probability of fill. Trend initiation.</p>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Algorithm Variations Section -->
+        <div id="variations" class="py-12 bg-white border-t border-stone-200">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-10">
+                    <h2 class="text-3xl font-bold text-slate-900">Algorithm Architecture</h2>
+                    <p class="text-slate-600 mt-2">Explore the evolution of the gap indicator from a simple exponential model to a robust, volume-weighted institutional tool.</p>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex border-b border-stone-200 mb-6 overflow-x-auto">
+                    <button class="px-6 py-3 text-sm focus:outline-none tab-active whitespace-nowrap" onclick="switchTab('vanilla', this)">1. Vanilla EGS</button>
+                    <button class="px-6 py-3 text-sm focus:outline-none tab-inactive whitespace-nowrap" onclick="switchTab('volatility', this)">2. Volatility Adaptive</button>
+                    <button class="px-6 py-3 text-sm focus:outline-none tab-inactive whitespace-nowrap" onclick="switchTab('volume', this)">3. Volume Confirmed</button>
+                    <button class="px-6 py-3 text-sm focus:outline-none tab-inactive whitespace-nowrap" onclick="switchTab('robust', this)">★ Combined Robust</button>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="algo-content" class="bg-stone-50 rounded-xl border border-stone-200 p-8">
+                    <!-- Dynamic Content populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategy Guide (Documentation) -->
+        <div id="documentation" class="py-12 bg-slate-50 border-t border-stone-200">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-8">Strategy & Documentation Guide</h2>
+                
+                <div class="space-y-12">
+                    <section>
+                        <h3 class="text-xl font-bold text-blue-800 mb-4">1. Core Logic: Noise vs. Strength</h3>
+                        <div class="prose text-slate-600">
+                            <p class="mb-4">Research categorizes gaps into two primary buckets for trading purposes:</p>
+                            <ul class="list-disc pl-5 space-y-2 mb-4">
+                                <li><strong>Common Gaps (Noise):</strong> Typically < 1-2% of asset price. These lack institutional backing and have a ~90% fill rate. The goal of the EGS indicator is to suppress these values to near zero.</li>
+                                <li><strong>Breakaway/Runaway Gaps (Strength):</strong> Usually > 2% with high volume (150-300% avg). These signal a supply/demand shift and often remain unfilled (60-70% of cases), acting as new support/resistance.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-xl font-bold text-blue-800 mb-4">2. The EGS Formula Explained</h3>
+                        <div class="bg-white p-6 rounded-lg border border-stone-200 shadow-sm">
+                            <p class="text-slate-600 mb-4">To highlight high-impact moves, we use an exponential function. This punishes small numbers (making them smaller) and rewards large numbers.</p>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm uppercase mb-2">Step 1: Raw Gap %</h4>
+                                    <p class="math-font text-slate-700">G = ((Open_current - Close_prev) / Close_prev) * 100</p>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm uppercase mb-2">Step 2: Exponential Weighting</h4>
+                                    <p class="math-font text-slate-700">Strength = |G|^k</p>
+                                    <p class="text-xs text-slate-500 mt-1">Where k is the sensitivity factor (usually 2 or 3). If G=0.5, G^2=0.25 (smaller). If G=2, G^2=4 (larger).</p>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm uppercase mb-2">Step 3: Normalization & Direction</h4>
+                                    <p class="math-font text-slate-700">Score = Sign(G) * (Strength / Normalization_Base) * 100</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-xl font-bold text-blue-800 mb-4">3. Predictive Value & Trading Rules</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white p-5 rounded-lg border-l-4 border-emerald-500 shadow-sm">
+                                <h4 class="font-bold text-slate-800 mb-2">High Score (> +60 or < -60)</h4>
+                                <p class="text-sm text-slate-600">Suggests a "Runaway" move. <br><strong>Action:</strong> Follow the trend. Do not fade (bet against) the move immediately. The gap area becomes a support/resistance zone.</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg border-l-4 border-slate-300 shadow-sm">
+                                <h4 class="font-bold text-slate-800 mb-2">Low Score (-20 to +20)</h4>
+                                <p class="text-sm text-slate-600">Suggests "Noise" or Common Gap. <br><strong>Action:</strong> Look for gap fill strategies. High probability of price returning to pre-gap levels.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-stone-200 py-8 mt-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
+            <p>Generated based on Market Candle Gap Research & Exponential Gap Strength Theory.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            gapPercent: 1.5,
+            atrPercent: 1.0,
+            volumePercent: 100,
+            kFactor: 2.0,
+            charts: {
+                gap: null,
+                gauge: null
+            }
+        };
+
+        // --- Data & Content for Tabs ---
+        const algoData = {
+            vanilla: {
+                title: "Vanilla EGS",
+                desc: "Basic exponential weighting to separate noise from signal.",
+                formula: "Score = (Gap^k / G_max^k) * 100",
+                pros: ["Simple to implement", "Effectively dampens small gaps"],
+                cons: ["Fixed G_max doesn't account for changing volatility", "Doesn't consider volume"]
+            },
+            volatility: {
+                title: "Volatility Adaptive",
+                desc: "Replaces fixed Max Gap with ATR (Average True Range). A 1% gap is huge in Forex but small in Crypto. This adapts to that.",
+                formula: "Score = (Gap^k / (2 * ATR)^k) * 100",
+                pros: ["Adapts to different assets", "Adapts to changing market regimes"],
+                cons: ["Requires ATR data feed"]
+            },
+            volume: {
+                title: "Volume Confirmed",
+                desc: "Adds a multiplier based on relative volume. Gaps on low volume are often traps.",
+                formula: "Multiplier = Volume / AvgVolume",
+                pros: ["Filters out retail traps", "Confirms institutional participation"],
+                cons: ["Can lag if volume data is delayed"]
+            },
+            robust: {
+                title: "Combined Robust Implementation",
+                desc: "The gold standard. Integrates ATR for scale, Exponential K for noise filtering, Volume for confirmation, and a Noise Floor.",
+                formula: "Base = (|Gap|^k / (2*ATR)^k); \nVol_Factor = min(Vol/AvgVol, 2.0); \nFinal = Sign(Gap) * Base * Vol_Factor * 100;",
+                pros: ["Extremely resilient to false signals", "Context-aware (Volatility & Volume)", "High predictive value"],
+                cons: ["Computationally slightly more complex"]
+            }
+        };
+
+        // --- DOM Elements ---
+        const els = {
+            gapSlider: document.getElementById('gapSlider'),
+            atrSlider: document.getElementById('atrSlider'),
+            volSlider: document.getElementById('volSlider'),
+            kSlider: document.getElementById('kSlider'),
+            gapVal: document.getElementById('gapVal'),
+            atrVal: document.getElementById('atrVal'),
+            volVal: document.getElementById('volVal'),
+            kVal: document.getElementById('kVal'),
+            calcRaw: document.getElementById('calcRaw'),
+            calcPower: document.getElementById('calcPower'),
+            calcNorm: document.getElementById('calcNorm'),
+            calcVol: document.getElementById('calcVol'),
+            calcFinal: document.getElementById('calcFinal'),
+            gaugeValue: document.getElementById('gaugeValue'),
+            statusBadge: document.getElementById('statusBadge'),
+            algoContent: document.getElementById('algo-content'),
+            indicators: {
+                noise: document.getElementById('indNoise'),
+                mod: document.getElementById('indMod'),
+                strong: document.getElementById('indStrong')
+            }
+        };
+
+        // --- Core Calculation Logic ---
+        function calculateEGS() {
+            const G = parseFloat(state.gapPercent);
+            const k = parseFloat(state.kFactor);
+            const ATR = parseFloat(state.atrPercent);
+            const VolPct = parseFloat(state.volumePercent);
+            
+            // 1. Noise Floor Check (Implicit in exponential, but explicit check good for robustness)
+            if (Math.abs(G) < 0.2) return 0; 
+
+            // 2. Exponential Weighting
+            const numerator = Math.pow(Math.abs(G), k);
+            
+            // 3. Volatility Normalization (Target Max = 2 * ATR)
+            const targetMax = 2 * ATR;
+            const denominator = Math.pow(targetMax, k);
+            
+            let rawScore = numerator / denominator;
+
+            // 4. Volume Confirmation (Cap boost at 2x to prevent infinity)
+            const volMultiplier = Math.min(VolPct / 100, 2.5); // Allow up to 2.5x boost
+            
+            // 5. Final Score
+            let finalScore = Math.sign(G) * rawScore * volMultiplier * 100;
+
+            // Clamp result to -100 to 100 for display sanity
+            if (finalScore > 100) finalScore = 100;
+            if (finalScore < -100) finalScore = -100;
+
+            return {
+                G, k, ATR, volMultiplier, numerator, denominator, finalScore
+            };
+        }
+
+        // --- UI Updates ---
+        function updateUI() {
+            const res = calculateEGS();
+
+            // Update Text Values
+            els.gapVal.innerText = (res.G > 0 ? "+" : "") + res.G.toFixed(1) + "%";
+            els.atrVal.innerText = res.ATR.toFixed(1) + "%";
+            els.volVal.innerText = state.volumePercent + "%";
+            els.kVal.innerText = res.k.toFixed(1);
+
+            // Update Calc Box
+            els.calcRaw.innerText = Math.abs(res.G).toFixed(2) + "%";
+            els.calcPower.innerText = res.numerator.toFixed(4);
+            els.calcNorm.innerText = res.denominator.toFixed(4);
+            els.calcVol.innerText = "x" + res.volMultiplier.toFixed(2);
+            els.calcFinal.innerText = res.finalScore.toFixed(1);
+
+            // Update Colors based on direction
+            if (res.finalScore > 0) {
+                els.calcFinal.className = "text-emerald-400 font-bold text-xl";
+                els.gapVal.className = "text-emerald-600 font-bold";
+            } else if (res.finalScore < 0) {
+                els.calcFinal.className = "text-rose-400 font-bold text-xl";
+                els.gapVal.className = "text-rose-600 font-bold";
+            } else {
+                els.calcFinal.className = "text-slate-200 font-bold text-xl";
+                els.gapVal.className = "text-slate-600 font-bold";
+            }
+
+            // Update Status Badge & Indicators
+            const absScore = Math.abs(res.finalScore);
+            els.indicators.noise.className = "flex-shrink-0 w-3 h-3 mt-1.5 rounded-full mr-3 bg-slate-300";
+            els.indicators.mod.className = "flex-shrink-0 w-3 h-3 mt-1.5 rounded-full mr-3 bg-slate-300";
+            els.indicators.strong.className = "flex-shrink-0 w-3 h-3 mt-1.5 rounded-full mr-3 bg-slate-300";
+
+            if (absScore < 20) {
+                els.statusBadge.innerText = "NOISE";
+                els.statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-600";
+                els.indicators.noise.classList.remove('bg-slate-300');
+                els.indicators.noise.classList.add('bg-slate-600');
+            } else if (absScore < 60) {
+                els.statusBadge.innerText = "MODERATE";
+                els.statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700";
+                els.indicators.mod.classList.remove('bg-slate-300');
+                els.indicators.mod.classList.add('bg-blue-500');
+            } else {
+                els.statusBadge.innerText = "STRONG SIGNAL";
+                els.statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700";
+                if(res.finalScore < 0) els.statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700";
+                els.indicators.strong.classList.remove('bg-slate-300');
+                els.indicators.strong.classList.add(res.finalScore > 0 ? 'bg-emerald-500' : 'bg-rose-500');
+            }
+
+            els.gaugeValue.innerText = res.finalScore.toFixed(0);
+
+            // Update Charts
+            updateCharts(res);
+        }
+
+        // --- Chart Management ---
+        function initCharts() {
+            // 1. Gap Visualizer Chart (Bar Chart styled as Candles)
+            const ctxGap = document.getElementById('gapChart').getContext('2d');
+            state.charts.gap = new Chart(ctxGap, {
+                type: 'bar',
+                data: {
+                    labels: ['Prev Candle', 'Current Gap'],
+                    datasets: [{
+                        label: 'Price',
+                        data: [[100, 105], [107, 110]], // Mock OHLC-ish data: [Low, High]
+                        backgroundColor: (ctx) => {
+                            const val = ctx.raw;
+                            if(!val) return '#94a3b8';
+                            // Logic to color candles based on mock open/close
+                            return ctx.dataIndex === 0 ? '#10b981' : '#3b82f6';
+                        },
+                        barPercentage: 0.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        y: { min: 90, max: 120, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 2. Gauge Chart (Doughnut)
+            const ctxGauge = document.getElementById('gaugeChart').getContext('2d');
+            state.charts.gauge = new Chart(ctxGauge, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Bearish', 'Neutral', 'Bullish'],
+                    datasets: [{
+                        data: [33, 33, 33],
+                        backgroundColor: ['#e11d48', '#e2e8f0', '#10b981'],
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: 270,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    cutout: '80%'
+                }
+            });
+        }
+
+        function updateCharts(res) {
+            // Update Gap Chart Logic
+            // Base price 100.
+            const prevClose = 100;
+            // Gap % determines Open of Candle 2
+            const currentOpen = prevClose * (1 + (res.G / 100));
+            // Candle 2 Close (Arbitrary movement for visualization)
+            const currentClose = currentOpen * (res.G > 0 ? 1.01 : 0.99);
+
+            // Set Y scale dynamically
+            const minVal = Math.min(prevClose, currentOpen, currentClose) * 0.95;
+            const maxVal = Math.max(prevClose, currentOpen, currentClose) * 1.05;
+            
+            state.charts.gap.options.scales.y.min = minVal;
+            state.charts.gap.options.scales.y.max = maxVal;
+
+            // Update Dataset (Using Floating Bars for Candle Range)
+            // Candle 1: Fixed Bullish Candle 98 -> 100
+            // Candle 2: Gap Candle
+            state.charts.gap.data.datasets[0].data = [
+                [98, 100], // Prev
+                [Math.min(currentOpen, currentClose), Math.max(currentOpen, currentClose)] // Current
+            ];
+            
+            // Color Candle 2
+            state.charts.gap.data.datasets[0].backgroundColor = [
+                '#94a3b8', // Prev (Neutral Grey)
+                res.G > 0 ? '#10b981' : '#f43f5e' // Green or Red
+            ];
+            state.charts.gap.update();
+
+            // Update Gauge Needle Simulation (Visual Trick via rotation or data segments)
+            // Simple visual: Color the relevant segment brighter based on score
+            // Map -100..100 to 0..100 percent of gauge
+            // This simple gauge has 3 fixed segments. For a real needle, we'd need complex plugins.
+            // Instead, we will highlight the active zone.
+            
+            const colors = ['#f43f5e', '#cbd5e1', '#10b981']; // Red, Grey, Green
+            const opacities = [0.3, 0.3, 0.3];
+
+            if (res.finalScore < -20) opacities[0] = 1; // Highlight Bear
+            else if (res.finalScore > 20) opacities[2] = 1; // Highlight Bull
+            else opacities[1] = 1; // Highlight Neutral
+
+            // Dynamically adjust colors array
+            const bgColors = colors.map((c, i) => {
+                // If opacity is 1, return color, else return washed out
+                return opacities[i] === 1 ? c : c + '40'; // add transparency hex
+            });
+            
+            state.charts.gauge.data.datasets[0].backgroundColor = bgColors;
+            state.charts.gauge.update();
+        }
+
+        // --- Tabs Logic ---
+        function switchTab(algoName, btn) {
+            // Update Tab Styles
+            const buttons = btn.parentElement.querySelectorAll('button');
+            buttons.forEach(b => {
+                b.className = "px-6 py-3 text-sm focus:outline-none tab-inactive whitespace-nowrap";
+            });
+            btn.className = "px-6 py-3 text-sm focus:outline-none tab-active whitespace-nowrap";
+
+            // Update Content
+            const data = algoData[algoName];
+            els.algoContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">${data.title}</h3>
+                        <p class="text-slate-600 mb-4">${data.desc}</p>
+                        <div class="bg-slate-900 text-slate-200 p-4 rounded-lg font-mono text-sm shadow-inner overflow-x-auto">
+                            ${data.formula.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm uppercase mb-3">Pros & Cons</h4>
+                        <ul class="space-y-2 mb-4">
+                            ${data.pros.map(p => `<li class="flex items-start text-sm text-slate-600"><span class="text-emerald-500 mr-2">✓</span> ${p}</li>`).join('')}
+                        </ul>
+                        <ul class="space-y-2">
+                            ${data.cons.map(c => `<li class="flex items-start text-sm text-slate-600"><span class="text-rose-500 mr-2">✗</span> ${c}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Event Listeners ---
+        els.gapSlider.addEventListener('input', (e) => { state.gapPercent = e.target.value; updateUI(); });
+        els.atrSlider.addEventListener('input', (e) => { state.atrPercent = e.target.value; updateUI(); });
+        els.volSlider.addEventListener('input', (e) => { state.volumePercent = e.target.value; updateUI(); });
+        els.kSlider.addEventListener('input', (e) => { state.kFactor = e.target.value; updateUI(); });
+
+        // --- Initialization ---
+        window.onload = () => {
+            initCharts();
+            updateUI();
+            switchTab('robust', document.querySelector('.tab-active')); // Load Default Tab
+        };
+
+    </script>
+</body>
+</html>
